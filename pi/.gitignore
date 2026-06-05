@@ -2,6 +2,7 @@
 # Python Virtual Environment (venv)
 # ====================================================================
 # Ignores the local environment binaries, libraries, and config
+.venv/
 bin
 include
 lib
@@ -28,3 +29,5 @@ pyvenv.cfg
 __pycache__/
 *.py[cod]
 *$py.class
+
+.env
