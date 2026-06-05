@@ -1,0 +1,30 @@
+# ====================================================================
+# Python Virtual Environment (venv)
+# ====================================================================
+# Ignores the local environment binaries, libraries, and config
+bin
+include
+lib
+lib64
+share
+pyvenv.cfg
+
+# ====================================================================
+# Audio / Testing Artifacts
+# ====================================================================
+# Ignores local recording tests, but keeps the code clean
+*.wav
+
+# ====================================================================
+# Large Machine Learning Models
+# ====================================================================
+# ONNX models can be quite large. It is usually better to download 
+# them via a setup script rather than tracking them in git.
+*.onnx
+
+# ====================================================================
+# Standard Python Caches
+# ====================================================================
+__pycache__/
+*.py[cod]
+*$py.class

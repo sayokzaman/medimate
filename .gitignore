@@ -1,0 +1,14 @@
+# Created by venv; see https://docs.python.org/3/library/venv.html
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE configurations
+.vscode
+.idea
+
+# Keep the subfolders structured
+!/pi
+!/arduino
+!/esp32
