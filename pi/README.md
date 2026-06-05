@@ -1,11 +1,3 @@
-It is awesome to hear that the engine is fully running and listening!
-
-Because you are working on the cutting edge with a Raspberry Pi running **Python 3.13**, you ran into a few unique problems. Specifically, `openwakeword` tried to pull down an old version of Google's TensorFlow (`tflite-runtime`) which is completely incompatible with Python 3.13 on Linux ARM64 hardware, causing the installer to fail.
-
-To make sure you (or anyone else) can clone your repository onto a completely fresh system and get it working instantly without hitting those same brick walls, here is a comprehensive, step-by-step installation guide. You can copy and paste this directly into your documentation!
-
----
-
 # 🩺 MediMate: Pi Core Deployment & Setup Guide
 
 This guide outlines how to configure a pristine system to run the MediMate Ambient Audio Voice Core using **Python 3.13+** on a Raspberry Pi (or Linux-based ARM64 environment).
