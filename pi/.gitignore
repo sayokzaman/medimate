@@ -17,13 +17,6 @@ pyvenv.cfg
 *.wav
 
 # ====================================================================
-# Large Machine Learning Models
-# ====================================================================
-# ONNX models can be quite large. It is usually better to download 
-# them via a setup script rather than tracking them in git.
-*.onnx
-
-# ====================================================================
 # Standard Python Caches
 # ====================================================================
 __pycache__/
