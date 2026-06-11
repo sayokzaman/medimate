@@ -15,6 +15,7 @@ USE `medimate`;
 
 -- Clear existing data to ensure a clean, reproducible state
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `environment_data`;
 DROP TABLE IF EXISTS `pulse_data`;
 DROP TABLE IF EXISTS `patients`;
 SET FOREIGN_KEY_CHECKS = 1;
@@ -43,6 +44,18 @@ CREATE TABLE `pulse_data` (
   `pulse` INT NOT NULL,
   `created_at` DATETIME NOT NULL,
   CONSTRAINT `fk_pulse_data_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE,
+  INDEX (`patient_id`),
+  INDEX (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for DHT11 environment readings
+CREATE TABLE `environment_data` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `patient_id` INT NOT NULL,
+  `temperature` DECIMAL(4,1) NOT NULL,
+  `humidity` DECIMAL(4,1) NOT NULL,
+  `created_at` DATETIME NOT NULL,
+  CONSTRAINT `fk_env_data_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE,
   INDEX (`patient_id`),
   INDEX (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -215,3 +228,155 @@ INSERT INTO `pulse_data` (`patient_id`, `pulse`, `created_at`) VALUES
 (8, 83, DATE_SUB(NOW(), INTERVAL 10 MINUTE)),
 (8, 80, DATE_SUB(NOW(), INTERVAL 5 MINUTE)),
 (8, 81, DATE_SUB(NOW(), INTERVAL 5 SECOND));
+
+-- ========================================================
+-- 4. SEED DATA - ENVIRONMENT READINGS (DHT11)
+-- ========================================================
+
+-- Active patients mirror the same time intervals as pulse_data.
+-- Released patients use fixed timestamps matching their stay.
+-- Temperature in °C, Humidity in %. Values reflect typical hospital
+-- room conditions with slight variation per room.
+
+-- --------------------------------------------------------
+-- Patient 1: John Doe — Room temp ~25°C, humidity ~55%
+-- --------------------------------------------------------
+INSERT INTO `environment_data` (`patient_id`, `temperature`, `humidity`, `created_at`) VALUES
+(1, 25.2, 54.0, DATE_SUB(NOW(), INTERVAL 60 MINUTE)),
+(1, 25.3, 54.5, DATE_SUB(NOW(), INTERVAL 55 MINUTE)),
+(1, 25.1, 55.0, DATE_SUB(NOW(), INTERVAL 50 MINUTE)),
+(1, 25.4, 55.2, DATE_SUB(NOW(), INTERVAL 45 MINUTE)),
+(1, 25.5, 54.8, DATE_SUB(NOW(), INTERVAL 40 MINUTE)),
+(1, 25.3, 55.5, DATE_SUB(NOW(), INTERVAL 35 MINUTE)),
+(1, 25.2, 56.0, DATE_SUB(NOW(), INTERVAL 30 MINUTE)),
+(1, 25.6, 55.8, DATE_SUB(NOW(), INTERVAL 25 MINUTE)),
+(1, 25.4, 56.2, DATE_SUB(NOW(), INTERVAL 20 MINUTE)),
+(1, 25.3, 55.9, DATE_SUB(NOW(), INTERVAL 15 MINUTE)),
+(1, 25.5, 55.4, DATE_SUB(NOW(), INTERVAL 10 MINUTE)),
+(1, 25.4, 55.7, DATE_SUB(NOW(), INTERVAL 5 MINUTE)),
+(1, 25.3, 55.5, DATE_SUB(NOW(), INTERVAL 5 SECOND));
+
+-- --------------------------------------------------------
+-- Patient 2: Jane Smith — Room temp ~24°C, humidity ~50%
+-- --------------------------------------------------------
+INSERT INTO `environment_data` (`patient_id`, `temperature`, `humidity`, `created_at`) VALUES
+(2, 24.1, 49.5, DATE_SUB(NOW(), INTERVAL 60 MINUTE)),
+(2, 24.0, 50.0, DATE_SUB(NOW(), INTERVAL 55 MINUTE)),
+(2, 24.2, 50.5, DATE_SUB(NOW(), INTERVAL 50 MINUTE)),
+(2, 24.3, 50.2, DATE_SUB(NOW(), INTERVAL 45 MINUTE)),
+(2, 24.1, 49.8, DATE_SUB(NOW(), INTERVAL 40 MINUTE)),
+(2, 24.4, 50.3, DATE_SUB(NOW(), INTERVAL 35 MINUTE)),
+(2, 24.2, 50.8, DATE_SUB(NOW(), INTERVAL 30 MINUTE)),
+(2, 24.5, 51.0, DATE_SUB(NOW(), INTERVAL 25 MINUTE)),
+(2, 24.3, 50.6, DATE_SUB(NOW(), INTERVAL 20 MINUTE)),
+(2, 24.2, 50.1, DATE_SUB(NOW(), INTERVAL 15 MINUTE)),
+(2, 24.4, 49.9, DATE_SUB(NOW(), INTERVAL 10 MINUTE)),
+(2, 24.3, 50.4, DATE_SUB(NOW(), INTERVAL 5 MINUTE)),
+(2, 24.2, 50.2, DATE_SUB(NOW(), INTERVAL 5 SECOND));
+
+-- --------------------------------------------------------
+-- Patient 3: Robert Johnson (released June 10) — Room temp ~23°C, humidity ~48%
+-- --------------------------------------------------------
+INSERT INTO `environment_data` (`patient_id`, `temperature`, `humidity`, `created_at`) VALUES
+(3, 23.2, 47.5, '2026-06-10 08:00:00'),
+(3, 23.3, 48.0, '2026-06-10 08:15:00'),
+(3, 23.1, 48.2, '2026-06-10 08:30:00'),
+(3, 23.4, 47.8, '2026-06-10 08:45:00'),
+(3, 23.2, 48.5, '2026-06-10 09:00:00'),
+(3, 23.5, 48.3, '2026-06-10 09:15:00'),
+(3, 23.3, 47.9, '2026-06-10 09:30:00'),
+(3, 23.4, 48.1, '2026-06-10 09:45:00'),
+(3, 23.2, 48.4, '2026-06-10 10:00:00'),
+(3, 23.3, 48.0, '2026-06-10 10:15:00'),
+(3, 23.5, 47.7, '2026-06-10 10:30:00'),
+(3, 23.4, 48.2, '2026-06-10 10:45:00'),
+(3, 23.3, 48.0, '2026-06-10 11:00:00');
+
+-- --------------------------------------------------------
+-- Patient 4: Emily Davis (released June 9) — Room temp ~26°C, humidity ~52%
+-- --------------------------------------------------------
+INSERT INTO `environment_data` (`patient_id`, `temperature`, `humidity`, `created_at`) VALUES
+(4, 26.0, 51.5, '2026-06-09 09:00:00'),
+(4, 26.1, 52.0, '2026-06-09 09:45:00'),
+(4, 26.2, 52.3, '2026-06-09 10:30:00'),
+(4, 26.0, 51.8, '2026-06-09 11:15:00'),
+(4, 26.3, 52.5, '2026-06-09 12:00:00'),
+(4, 26.1, 52.2, '2026-06-09 12:45:00'),
+(4, 26.4, 51.9, '2026-06-09 13:30:00'),
+(4, 26.2, 52.4, '2026-06-09 14:15:00'),
+(4, 26.1, 52.0, '2026-06-09 15:00:00'),
+(4, 26.3, 51.7, '2026-06-09 15:45:00'),
+(4, 26.0, 52.1, '2026-06-09 16:30:00'),
+(4, 26.2, 52.0, '2026-06-09 17:00:00');
+
+-- --------------------------------------------------------
+-- Patient 5: Michael Brown — Room temp ~25°C, humidity ~57%
+-- --------------------------------------------------------
+INSERT INTO `environment_data` (`patient_id`, `temperature`, `humidity`, `created_at`) VALUES
+(5, 25.0, 56.5, DATE_SUB(NOW(), INTERVAL 60 MINUTE)),
+(5, 25.2, 57.0, DATE_SUB(NOW(), INTERVAL 55 MINUTE)),
+(5, 25.1, 57.3, DATE_SUB(NOW(), INTERVAL 50 MINUTE)),
+(5, 25.3, 57.5, DATE_SUB(NOW(), INTERVAL 45 MINUTE)),
+(5, 25.2, 57.1, DATE_SUB(NOW(), INTERVAL 40 MINUTE)),
+(5, 25.4, 56.8, DATE_SUB(NOW(), INTERVAL 35 MINUTE)),
+(5, 25.3, 57.4, DATE_SUB(NOW(), INTERVAL 30 MINUTE)),
+(5, 25.5, 57.6, DATE_SUB(NOW(), INTERVAL 25 MINUTE)),
+(5, 25.2, 57.2, DATE_SUB(NOW(), INTERVAL 20 MINUTE)),
+(5, 25.4, 56.9, DATE_SUB(NOW(), INTERVAL 15 MINUTE)),
+(5, 25.3, 57.3, DATE_SUB(NOW(), INTERVAL 10 MINUTE)),
+(5, 25.5, 57.0, DATE_SUB(NOW(), INTERVAL 5 MINUTE)),
+(5, 25.3, 57.1, DATE_SUB(NOW(), INTERVAL 5 SECOND));
+
+-- --------------------------------------------------------
+-- Patient 6: Sarah Wilson — Room temp ~24°C, humidity ~45%
+-- --------------------------------------------------------
+INSERT INTO `environment_data` (`patient_id`, `temperature`, `humidity`, `created_at`) VALUES
+(6, 23.8, 44.5, DATE_SUB(NOW(), INTERVAL 60 MINUTE)),
+(6, 24.0, 45.0, DATE_SUB(NOW(), INTERVAL 55 MINUTE)),
+(6, 23.9, 44.8, DATE_SUB(NOW(), INTERVAL 50 MINUTE)),
+(6, 24.1, 45.2, DATE_SUB(NOW(), INTERVAL 45 MINUTE)),
+(6, 24.0, 44.9, DATE_SUB(NOW(), INTERVAL 40 MINUTE)),
+(6, 23.9, 45.3, DATE_SUB(NOW(), INTERVAL 35 MINUTE)),
+(6, 24.2, 45.5, DATE_SUB(NOW(), INTERVAL 30 MINUTE)),
+(6, 24.0, 45.1, DATE_SUB(NOW(), INTERVAL 25 MINUTE)),
+(6, 23.8, 44.7, DATE_SUB(NOW(), INTERVAL 20 MINUTE)),
+(6, 24.1, 45.0, DATE_SUB(NOW(), INTERVAL 15 MINUTE)),
+(6, 24.0, 44.8, DATE_SUB(NOW(), INTERVAL 10 MINUTE)),
+(6, 23.9, 45.2, DATE_SUB(NOW(), INTERVAL 5 MINUTE)),
+(6, 24.0, 45.0, DATE_SUB(NOW(), INTERVAL 5 SECOND));
+
+-- --------------------------------------------------------
+-- Patient 7: William Taylor — Room temp ~23°C, humidity ~60%
+-- --------------------------------------------------------
+INSERT INTO `environment_data` (`patient_id`, `temperature`, `humidity`, `created_at`) VALUES
+(7, 23.0, 59.5, DATE_SUB(NOW(), INTERVAL 60 MINUTE)),
+(7, 23.1, 60.0, DATE_SUB(NOW(), INTERVAL 55 MINUTE)),
+(7, 23.2, 60.3, DATE_SUB(NOW(), INTERVAL 50 MINUTE)),
+(7, 23.0, 59.8, DATE_SUB(NOW(), INTERVAL 45 MINUTE)),
+(7, 23.3, 60.5, DATE_SUB(NOW(), INTERVAL 40 MINUTE)),
+(7, 23.1, 60.2, DATE_SUB(NOW(), INTERVAL 35 MINUTE)),
+(7, 23.2, 59.9, DATE_SUB(NOW(), INTERVAL 30 MINUTE)),
+(7, 23.4, 60.4, DATE_SUB(NOW(), INTERVAL 25 MINUTE)),
+(7, 23.2, 60.1, DATE_SUB(NOW(), INTERVAL 20 MINUTE)),
+(7, 23.1, 59.7, DATE_SUB(NOW(), INTERVAL 15 MINUTE)),
+(7, 23.3, 60.3, DATE_SUB(NOW(), INTERVAL 10 MINUTE)),
+(7, 23.2, 60.0, DATE_SUB(NOW(), INTERVAL 5 MINUTE)),
+(7, 23.1, 59.9, DATE_SUB(NOW(), INTERVAL 5 SECOND));
+
+-- --------------------------------------------------------
+-- Patient 8: Olivia Martinez — Room temp ~22°C, humidity ~53%
+-- --------------------------------------------------------
+INSERT INTO `environment_data` (`patient_id`, `temperature`, `humidity`, `created_at`) VALUES
+(8, 22.0, 52.5, DATE_SUB(NOW(), INTERVAL 60 MINUTE)),
+(8, 22.1, 53.0, DATE_SUB(NOW(), INTERVAL 55 MINUTE)),
+(8, 22.2, 53.2, DATE_SUB(NOW(), INTERVAL 50 MINUTE)),
+(8, 22.0, 52.8, DATE_SUB(NOW(), INTERVAL 45 MINUTE)),
+(8, 22.3, 53.5, DATE_SUB(NOW(), INTERVAL 40 MINUTE)),
+(8, 22.1, 53.1, DATE_SUB(NOW(), INTERVAL 35 MINUTE)),
+(8, 22.4, 52.9, DATE_SUB(NOW(), INTERVAL 30 MINUTE)),
+(8, 22.2, 53.4, DATE_SUB(NOW(), INTERVAL 25 MINUTE)),
+(8, 22.0, 53.0, DATE_SUB(NOW(), INTERVAL 20 MINUTE)),
+(8, 22.3, 52.7, DATE_SUB(NOW(), INTERVAL 15 MINUTE)),
+(8, 22.1, 53.3, DATE_SUB(NOW(), INTERVAL 10 MINUTE)),
+(8, 22.2, 53.0, DATE_SUB(NOW(), INTERVAL 5 MINUTE)),
+(8, 22.1, 52.8, DATE_SUB(NOW(), INTERVAL 5 SECOND));

@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <DHT.h>
 
 // ================= SERVER =================
 const String serverName = "https://lavender-monkey-657081.hostingersite.com/api.php";
@@ -9,7 +10,11 @@ const String serverName = "https://lavender-monkey-657081.hostingersite.com/api.
 const int patientId = 1;
 
 // ================= SENSOR & PINS =================
-const int pulsePin = 13;
+const int pulsePin = 14;
+
+#define DHTPIN  13
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
 
 // ================= WI-FI CREDENTIALS =================
 const char* ssid = "Xiaomi 15";
@@ -22,6 +27,7 @@ void setup() {
   Serial.print("Patient ID: ");
   Serial.println(patientId);
   pinMode(pulsePin, INPUT);
+  dht.begin();
 }
 
 void loop() {
@@ -43,8 +49,9 @@ void loop() {
   int beatCount = 0;
 
   // Keep sampling for 10000 milliseconds (10 seconds)
-  while (millis() - sampleWindowStartTime < 10000) {
+  while (millis() - sampleWindowStartTime < 5000) {
     int signal = analogRead(pulsePin);
+    Serial.println(signal); // DEBUG: remove after calibration
     delay(20); // 50Hz Sample Rate
 
     // Track the highest and lowest points of the wave to auto-adjust threshold
@@ -91,6 +98,16 @@ void loop() {
   Serial.print(finalBPM);
   Serial.println(" BPM <<<\n");
 
+  delay(1000); // Short pause before reading DHT11
+
+  // DHT11 is digital — reads fine while WiFi is still off
+  float temperature = dht.readTemperature();
+  float humidity    = dht.readHumidity();
+  if (isnan(temperature)) temperature = 0;
+  if (isnan(humidity))    humidity    = 0;
+  Serial.print("Temperature: "); Serial.print(temperature, 1); Serial.println(" C");
+  Serial.print("Humidity:    "); Serial.print(humidity,    1); Serial.println(" %");
+
   connectWifi();
 
   if (WiFi.status() == WL_CONNECTED) {
@@ -99,8 +116,10 @@ void loop() {
     HTTPClient http;
 
     String serverPath = serverName
-      + "?patient_id=" + String(patientId)
-      + "&pulse=" + String(finalBPM);
+      + "?patient_id="  + String(patientId)
+      + "&pulse="       + String(finalBPM)
+      + "&temperature=" + String(temperature, 1)
+      + "&humidity="    + String(humidity, 1);
 
     Serial.println("Uploading BPM to server...");
     if (http.begin(client, serverPath)) {

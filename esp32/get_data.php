@@ -55,11 +55,27 @@ if (isset($_GET['patient_id'])) {
         if ($diff <= 30) $deviceStatus = "Connected";
     }
 
+    $envData = [];
+    $eStmt = $conn->prepare(
+        "SELECT temperature, humidity, created_at FROM environment_data WHERE patient_id = ? ORDER BY id DESC LIMIT 30"
+    );
+    if ($eStmt) {
+        $eStmt->bind_param("i", $patientId);
+        $eStmt->execute();
+        $eResult = $eStmt->get_result();
+        while ($row = $eResult->fetch_assoc()) {
+            $envData[] = $row;
+        }
+        $envData = array_reverse($envData);
+        $eStmt->close();
+    }
+
     echo json_encode([
         "status"        => "success",
         "patient"       => $patient,
         "device_status" => $deviceStatus,
-        "data"          => $data
+        "data"          => $data,
+        "env_data"      => $envData
     ]);
 
 // ======================================

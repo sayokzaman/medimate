@@ -169,11 +169,31 @@
             position: relative;
         }
 
+        .env-charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .chart-wrap-sm {
+            height: 260px;
+            position: relative;
+        }
+
+        @media (max-width: 768px) {
+            .env-charts-row { grid-template-columns: 1fr; }
+            .chart-wrap-sm  { height: 220px; }
+        }
+
         .card-title {
             font-size: 15px;
             color: #94a3b8;
             margin-bottom: 16px;
         }
+
+        /* Temp / Humidity values */
+        .temp-value  { color: #f59e0b !important; }
+        .humid-value { color: #38bdf8 !important; }
 
         /* ---- Error ---- */
         #error {
@@ -277,6 +297,19 @@
                 </div>
             </div>
 
+            <div class="bpm-status-row">
+                <div class="card bpm-card">
+                    <div class="label">Temperature</div>
+                    <div class="value temp-value" id="tempValue">--</div>
+                    <div class="unit">°C</div>
+                </div>
+
+                <div class="card bpm-card">
+                    <div class="label">Humidity</div>
+                    <div class="value humid-value" id="humidValue">--</div>
+                    <div class="unit">%</div>
+                </div>
+            </div>
         </div>
 
         <!-- Main -->
@@ -287,6 +320,21 @@
                     <canvas id="pulseChart"></canvas>
                 </div>
             </div>
+
+            <div class="env-charts-row">
+                <div class="card">
+                    <div class="card-title">Temperature (last 30 readings)</div>
+                    <div class="chart-wrap-sm">
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Humidity (last 30 readings)</div>
+                    <div class="chart-wrap-sm">
+                        <canvas id="humidChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -295,7 +343,9 @@
 <script>
     const params    = new URLSearchParams(window.location.search);
     const patientId = params.get('id');
-    let chart       = null;
+    let chart      = null;
+    let tempChart  = null;
+    let humidChart = null;
     let pollInterval = null;
 
     function formatDate(str) {
@@ -350,6 +400,64 @@
         });
     }
 
+    function initEnvCharts() {
+        const sharedOptions = (color, unit, min, max) => ({
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            scales: {
+                y: {
+                    min, max,
+                    grid:  { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: '#94a3b8', callback: v => v + unit }
+                },
+                x: {
+                    grid:  { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: '#94a3b8', maxTicksLimit: 8 }
+                }
+            },
+            plugins: { legend: { labels: { color: '#94a3b8' } } }
+        });
+
+        tempChart = new Chart(document.getElementById('tempChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Temperature (°C)',
+                    data: [],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245,158,11,0.12)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#f59e0b'
+                }]
+            },
+            options: sharedOptions('#f59e0b', '°C', 0, 50)
+        });
+
+        humidChart = new Chart(document.getElementById('humidChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Humidity (%)',
+                    data: [],
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56,189,248,0.12)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#38bdf8'
+                }]
+            },
+            options: sharedOptions('#38bdf8', '%', 0, 100)
+        });
+    }
+
     // ======================================
     // LOAD DATA
     // ======================================
@@ -379,10 +487,14 @@
 
             document.getElementById('content').style.display = 'block';
 
-            // Pulse
+            // Pulse + environment
             const data   = result.data;
             const latest = data.length > 0 ? data[data.length - 1] : null;
             document.getElementById('pulseValue').textContent = latest ? latest.pulse : '--';
+            const envData  = result.env_data || [];
+            const latestEnv = envData.length > 0 ? envData[envData.length - 1] : null;
+            document.getElementById('tempValue').textContent  = latestEnv ? parseFloat(latestEnv.temperature).toFixed(1) : '--';
+            document.getElementById('humidValue').textContent = latestEnv ? parseFloat(latestEnv.humidity).toFixed(1)    : '--';
 
             // Status
             const statusEl = document.getElementById('deviceStatus');
@@ -397,11 +509,21 @@
             document.getElementById('lastUpdate').textContent =
                 latest ? 'Last reading: ' + latest.created_at : '—';
 
-            // Chart
+            // Pulse chart
             if (!chart) initChart();
             chart.data.labels           = data.map(item => item.created_at.slice(11, 16));
             chart.data.datasets[0].data = data.map(item => item.pulse);
             chart.update();
+
+            // Env charts
+            if (!tempChart) initEnvCharts();
+            const envLabels = envData.map(item => item.created_at.slice(11, 16));
+            tempChart.data.labels           = envLabels;
+            tempChart.data.datasets[0].data = envData.map(item => parseFloat(item.temperature));
+            tempChart.update();
+            humidChart.data.labels           = envLabels;
+            humidChart.data.datasets[0].data = envData.map(item => parseFloat(item.humidity));
+            humidChart.update();
 
         } catch (e) {
             document.getElementById('error').style.display = 'block';

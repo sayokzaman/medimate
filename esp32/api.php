@@ -32,8 +32,21 @@ if (isset($_GET['pulse']) && isset($_GET['patient_id'])) {
     } else {
         echo "FAILED";
     }
-
     $stmt->close();
+
+    if (isset($_GET['temperature']) && isset($_GET['humidity'])) {
+        $temperature = floatval($_GET['temperature']);
+        $humidity    = floatval($_GET['humidity']);
+
+        $eStmt = $conn->prepare(
+            "INSERT INTO environment_data (patient_id, temperature, humidity, created_at) VALUES (?, ?, ?, ?)"
+        );
+        if ($eStmt) {
+            $eStmt->bind_param("idds", $patientId, $temperature, $humidity, $createdAt);
+            $eStmt->execute();
+            $eStmt->close();
+        }
+    }
 
 } else {
     echo "NO_DATA";
