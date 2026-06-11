@@ -5,8 +5,11 @@
 // ================= SERVER =================
 const String serverName = "https://lavender-monkey-657081.hostingersite.com/api.php";
 
+// ================= PATIENT =================
+const int patientId = 1;
+
 // ================= SENSOR & PINS =================
-const int pulsePin = 13; 
+const int pulsePin = 13;
 
 // ================= WI-FI CREDENTIALS =================
 const char* ssid = "Xiaomi 15";
@@ -16,6 +19,8 @@ void setup() {
   Serial.begin(115200);
   delay(2000);
   Serial.println("\n--- MediMate BPM Monitor Started ---");
+  Serial.print("Patient ID: ");
+  Serial.println(patientId);
   pinMode(pulsePin, INPUT);
 }
 
@@ -36,7 +41,7 @@ void loop() {
   int threshold = 2200;         // Midpoint to look for a beat
   bool preBeat = false;
   int beatCount = 0;
-  
+
   // Keep sampling for 10000 milliseconds (10 seconds)
   while (millis() - sampleWindowStartTime < 10000) {
     int signal = analogRead(pulsePin);
@@ -52,10 +57,10 @@ void loop() {
     threshold = (peakValue + troughValue) / 2;
 
     // Detect the upward surge of a heartbeat pulse
-    if (signal > threshold && preBeat == false && (millis() - lastBeatTime) > 300) { 
+    if (signal > threshold && preBeat == false && (millis() - lastBeatTime) > 300) {
       preBeat = true;
       beatCount++;
-      
+
       unsigned long currentBeatTime = millis();
       if (lastBeatTime != 0) {
         long ibi = currentBeatTime - lastBeatTime; // Time between beats
@@ -68,17 +73,17 @@ void loop() {
 
     // Detect when the signal falls back down below the threshold
     if (signal < threshold && preBeat == true) {
-      preBeat = false; 
+      preBeat = false;
     }
   }
 
   // 2. CALCULATE FINAL BPM FROM THE 10-SECOND WINDOW
   // (Beats in 10 seconds) * 6 = Beats in 60 seconds
-  int finalBPM = beatCount * 6; 
+  int finalBPM = beatCount * 6;
 
   // Guard rails for bad/unrealistic readings (finger missing or moving)
   if (finalBPM < 40 || finalBPM > 180 || beatCount < 5) {
-    Serial.println("⚠️ Warning: Unstable reading. Please hold still and try again.");
+    Serial.println("Warning: Unstable reading. Please hold still and try again.");
     finalBPM = 0; // Mark as invalid read
   }
 
@@ -92,9 +97,10 @@ void loop() {
     WiFiClientSecure client;
     client.setInsecure();
     HTTPClient http;
-      
-    // Sending actual BPM instead of raw noise values
-    String serverPath = serverName + "?pulse=" + String(finalBPM);
+
+    String serverPath = serverName
+      + "?patient_id=" + String(patientId)
+      + "&pulse=" + String(finalBPM);
 
     Serial.println("Uploading BPM to server...");
     if (http.begin(client, serverPath)) {
@@ -119,8 +125,8 @@ void connectWifi() {
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("✔️ Connected.");
+    Serial.println("Connected.");
   } else {
-    Serial.println("✖️ Wi-Fi Timeout.");
+    Serial.println("Wi-Fi Timeout.");
   }
 }

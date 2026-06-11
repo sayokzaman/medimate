@@ -2,96 +2,86 @@
 
 header('Content-Type: application/json');
 
-// ======================================
-// TIMEZONE
-// ======================================
-
 date_default_timezone_set('Asia/Dhaka');
 
-// ======================================
-// DATABASE
-// ======================================
-
 $servername = "localhost";
-$username = "u837808682_medimate_user";
-$password = "Medimate_user1";
-$database = "u837808682_medimate";
+$username   = "root";
+$password   = "";
+$database   = "medimate";
 
-$conn = new mysqli(
-    $servername,
-    $username,
-    $password,
-    $database
-);
-
-// ======================================
-// CONNECTION CHECK
-// ======================================
+$conn = new mysqli($servername, $username, $password, $database);
 
 if ($conn->connect_error) {
-
-    die(json_encode([
-        "status" => "error"
-    ]));
+    die(json_encode(["status" => "error", "message" => "DB connection failed"]));
 }
 
 // ======================================
-// GET LATEST DATA
+// SINGLE PATIENT + PULSE DATA
 // ======================================
 
-$result = $conn->query("
-    SELECT *
-    FROM pulse_data
-    ORDER BY id DESC
-    LIMIT 30
-");
+if (isset($_GET['patient_id'])) {
 
-$data = [];
+    $patientId = intval($_GET['patient_id']);
 
-while ($row = $result->fetch_assoc()) {
+    $pStmt = $conn->prepare("SELECT * FROM patients WHERE id = ?");
+    $pStmt->bind_param("i", $patientId);
+    $pStmt->execute();
+    $patient = $pStmt->get_result()->fetch_assoc();
+    $pStmt->close();
 
-    $data[] = $row;
-}
-
-$data = array_reverse($data);
-
-// ======================================
-// DEVICE STATUS
-// ======================================
-
-$deviceStatus = "Offline";
-
-if (!empty($data)) {
-
-    $latest = end($data);
-
-    $lastTimestamp =
-        strtotime($latest['created_at']);
-
-    $currentTimestamp = time();
-
-    $difference =
-        $currentTimestamp - $lastTimestamp;
-
-    if ($difference <= 10) {
-
-        $deviceStatus = "Connected";
+    if (!$patient) {
+        echo json_encode(["status" => "error", "message" => "Patient not found"]);
+        $conn->close();
+        exit;
     }
+
+    $dStmt = $conn->prepare(
+        "SELECT * FROM pulse_data WHERE patient_id = ? ORDER BY id DESC LIMIT 30"
+    );
+    $dStmt->bind_param("i", $patientId);
+    $dStmt->execute();
+    $result = $dStmt->get_result();
+
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+    $data = array_reverse($data);
+    $dStmt->close();
+
+    $deviceStatus = "Offline";
+    if (!empty($data)) {
+        $diff = time() - strtotime(end($data)['created_at']);
+        if ($diff <= 30) $deviceStatus = "Connected";
+    }
+
+    echo json_encode([
+        "status"        => "success",
+        "patient"       => $patient,
+        "device_status" => $deviceStatus,
+        "data"          => $data
+    ]);
+
+// ======================================
+// ALL PATIENTS LIST
+// ======================================
+
+} else {
+
+    $patients = [];
+    $result   = $conn->query("SELECT * FROM patients ORDER BY id ASC");
+
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $patients[] = $row;
+        }
+    }
+
+    echo json_encode([
+        "status"   => "success",
+        "patients" => $patients
+    ]);
 }
-
-// ======================================
-// RESPONSE
-// ======================================
-
-echo json_encode([
-
-    "status" => "success",
-
-    "device_status" => $deviceStatus,
-
-    "data" => $data
-]);
 
 $conn->close();
-
 ?>
